@@ -1,11 +1,665 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=1.5, viewport-fit=cover">
+    <title>Mallex 多账号管理 · APK全功能版</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --neon-blue:#00f3ff; --neon-purple:#bf00ff; --neon-green:#00ff88; --neon-gold:#ffd700;
+            --neon-orange:#ff8800; --dark-bg:#0a0a0f; --card-bg:rgba(20,20,35,0.85);
+            --border-glow:rgba(0,243,255,0.3); --log-width:340px;
+        }
+        body { font-family:'Rajdhani','Microsoft YaHei',sans-serif; background:var(--dark-bg); min-height:100vh; color:#e0e0e0; padding:10px; }
+        body::before { content:''; position:fixed; top:0;left:0;right:0;bottom:0; background:radial-gradient(ellipse at top, rgba(0,243,255,0.04) 0%,transparent 50%),radial-gradient(ellipse at bottom,rgba(191,0,255,0.04) 0%,transparent 50%); pointer-events:none; z-index:-1; }
+        .app-layout { display:flex; gap:12px; max-width:1900px; margin:0 auto; align-items:flex-start; }
+        .left-panel { width:var(--log-width); flex-shrink:0; display:flex; flex-direction:column; gap:12px; position:sticky; top:10px; max-height:calc(100vh - 20px); }
+        .import-panel { background:rgba(10,10,20,0.8); border:1px solid var(--border-glow); border-radius:14px; padding:14px; backdrop-filter:blur(8px); }
+        .import-panel h3 { font-family:'Orbitron',sans-serif; color:var(--neon-blue); font-size:15px; margin-bottom:10px; }
+        .log-panel { flex:1; background:rgba(10,10,20,0.8); border:1px solid var(--border-glow); border-radius:14px; padding:16px; backdrop-filter:blur(8px); display:flex; flex-direction:column; overflow:hidden; }
+        .log-panel h3 { font-family:'Orbitron',sans-serif; color:var(--neon-blue); font-size:15px; margin-bottom:8px; }
+        .log-list { flex:1; overflow-y:auto; font-size:11px; display:flex; flex-direction:column; gap:3px; padding-right:4px; }
+        .log-item { padding:4px 8px; border-left:2px solid transparent; background:rgba(0,0,0,0.2); border-radius:4px; word-break:break-all; font-size:11px; }
+        .log-item.info { color:#aaa; border-left-color:#666; }
+        .log-item.success { color:var(--neon-green); border-left-color:var(--neon-green); }
+        .log-item.warning { color:var(--neon-orange); border-left-color:var(--neon-orange); }
+        .log-item.error { color:#ff4444; border-left-color:#ff4444; }
+        .log-item.highlight { color:var(--neon-gold); border-left-color:var(--neon-gold); }
+        .main-area { flex:1; min-width:0; }
+        .header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:var(--card-bg); border:1px solid var(--border-glow); border-radius:14px; padding:14px 20px; margin-bottom:12px; backdrop-filter:blur(10px); }
+        .header h1 { font-family:'Orbitron',sans-serif; font-size:20px; color:var(--neon-blue); text-shadow:0 0 12px rgba(0,243,255,0.5); }
+        .btn { padding:7px 16px; background:linear-gradient(135deg, rgba(0,243,255,0.15), rgba(191,0,255,0.15)); color:var(--neon-blue); border:1px solid var(--neon-blue); border-radius:6px; cursor:pointer; font-size:11px; font-family:'Orbitron',sans-serif; text-transform:uppercase; letter-spacing:1px; transition:all 0.25s; white-space:nowrap; }
+        .btn:hover { background:linear-gradient(135deg, rgba(0,243,255,0.3), rgba(191,0,255,0.3)); box-shadow:0 0 14px rgba(0,243,255,0.4); }
+        .btn:disabled { background:rgba(100,100,100,0.2); border-color:#555; color:#555; cursor:not-allowed; }
+        .btn-success { border-color:var(--neon-green); color:var(--neon-green); background:linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,200,100,0.15)); }
+        .btn-warning { border-color:var(--neon-orange); color:var(--neon-orange); background:linear-gradient(135deg, rgba(255,136,0,0.15), rgba(255,100,0,0.15)); }
+        .btn-gold { border-color:var(--neon-gold); color:var(--neon-gold); background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,180,0,0.15)); }
+        .btn-danger { border-color:#ff4444; color:#ff4444; background:linear-gradient(135deg, rgba(255,68,68,0.15), rgba(255,0,100,0.15)); }
+        .btn-sm { padding:4px 10px; font-size:10px; }
+        .btn-xs { padding:2px 8px; font-size:9px; }
+        .progress-container { background:rgba(0,0,0,0.4); border-radius:8px; height:20px; margin:8px 0; overflow:hidden; display:none; }
+        .progress-bar { height:100%; width:0%; background:linear-gradient(90deg, var(--neon-blue), var(--neon-purple)); transition:width 0.3s; }
+        .progress-text { font-size:10px; color:var(--neon-blue); text-align:center; margin-bottom:4px; display:none; }
+        .pledge-panel { background:rgba(10,20,40,0.7); border:1px solid var(--neon-purple); border-radius:12px; padding:15px; margin-bottom:12px; }
+        .pledge-panel h3 { color:var(--neon-purple); margin-bottom:8px; font-family:'Orbitron',sans-serif; font-size:15px; }
+        .cards-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap:12px; }
+        .account-card { background:rgba(20,20,38,0.9); border:1px solid rgba(0,243,255,0.18); border-radius:14px; padding:15px; backdrop-filter:blur(6px); position:relative; }
+        .account-card::after { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:linear-gradient(90deg,transparent,var(--neon-blue),transparent); opacity:0.4; }
+        .card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+        .card-mobile { font-family:'Orbitron',sans-serif; font-size:15px; font-weight:600; color:#fff; }
+        .badge { font-size:9px; padding:2px 8px; border-radius:10px; }
+        .badge-vip { background:rgba(255,215,0,0.2); color:var(--neon-gold); }
+        .badge-online { background:rgba(0,255,136,0.2); color:var(--neon-green); }
+        .card-assets { background:rgba(0,0,0,0.3); border-radius:6px; padding:6px 8px; margin-bottom:8px; font-size:11px; display:flex; flex-wrap:wrap; gap:4px; max-height:65px; overflow-y:auto; }
+        .asset-tag { background:rgba(0,243,255,0.1); padding:2px 6px; border-radius:4px; font-size:10px; white-space:nowrap; }
+        .section-row { display:flex; align-items:center; gap:8px; margin-bottom:5px; padding:6px 8px; background:rgba(0,0,0,0.2); border-radius:8px; flex-wrap:wrap; }
+        .section-label { font-size:10px; color:#aaa; text-transform:uppercase; min-width:45px; font-weight:600; }
+        .countdown-display { font-family:'Orbitron',monospace; font-size:15px; font-weight:700; color:#fff; min-width:85px; text-align:center; }
+        .pledge-summary { background:rgba(0,0,0,0.3); border-radius:6px; padding:6px 8px; margin:6px 0; font-size:11px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+        .pledge-summary span { font-size:11px; white-space:nowrap; }
+        .pledge-extra { color:#aaa; font-size:10px; margin-left:4px; }
+        .card-log { background:rgba(0,0,0,0.3); border-radius:6px; padding:5px 8px; max-height:80px; overflow-y:auto; font-size:11px; margin-top:6px; }
+        .card-log .log-item { font-size:11px; }
+        .arrow-up { color:var(--neon-green); font-weight:bold; }
+        .arrow-down { color:#ff4444; font-weight:bold; }
+        .auto-toggle { display:flex; align-items:center; gap:3px; font-size:10px; cursor:pointer; color:#aaa; margin-left:4px; }
+        .auto-toggle.active { color:var(--neon-green); }
+        .auto-toggle input { accent-color:var(--neon-green); cursor:pointer; }
+        .status-text { font-size:10px; padding:2px 8px; border-radius:10px; }
+        .status-running { background:rgba(0,243,255,0.15); color:var(--neon-blue); }
+        .status-ready { background:rgba(0,255,136,0.2); color:var(--neon-green); }
+        .status-idle { background:rgba(150,150,150,0.2); color:#aaa; }
+        .status-noreward { background:rgba(255,68,68,0.2); color:#ff6666; }
+        .status-collected { background:rgba(0,200,255,0.2); color:#00c8ff; }
+        @media (max-width:900px) { .app-layout { flex-direction:column; } .left-panel { width:100%; max-height:none; position:static; } .cards-grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <div class="left-panel">
+        <div class="import-panel">
+            <h3>📁 账号管理</h3>
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
+                <input id="addMobile" placeholder="手机号" style="flex:1; padding:6px; background:#111; border:1px solid var(--neon-blue); color:#fff; border-radius:4px;">
+                <input id="addPassword" placeholder="密码" style="flex:1; padding:6px; background:#111; border:1px solid var(--neon-blue); color:#fff; border-radius:4px;">
+                <button class="btn btn-sm btn-success" onclick="addAccountManually()">➕ 添加</button>
+            </div>
+            <textarea id="batchImportText" placeholder="批量粘贴账号&#10;格式：手机号-----密码&#10;每行一个，支持直接粘贴TXT内容" style="width:100%; height:80px; background:#111; border:1px solid var(--neon-blue); color:#fff; font-size:10px; padding:6px; border-radius:6px; resize:vertical;"></textarea>
+            <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                <button class="btn btn-sm" onclick="importFromPaste()">📋 粘贴导入</button>
+                <button class="btn btn-sm" onclick="document.getElementById('fileInput').click()">📂 选择文件</button>
+                <input type="file" id="fileInput" accept=".txt" style="display:none;">
+                <button class="btn btn-sm" onclick="loginAllAccounts()">🔑 登录全部</button>
+            </div>
+            <div style="margin-top:8px; font-size:10px; color:#aaa;">已加载 <span id="accountCount">0</span> 个账号</div>
+        </div>
+        <div class="log-panel">
+            <h3>📜 运行日志</h3>
+            <div class="log-list" id="globalLogList"><div class="log-item info">系统就绪</div></div>
+        </div>
+    </div>
+    <main class="main-area">
+        <div class="header">
+            <h1>⚡ Mallex 全功能管理</h1>
+            <div style="display:flex;gap:6px;flex-wrap:wrap; align-items:center;">
+                <button class="btn btn-gold btn-sm" onclick="startAllMAX()">▶ 全部开始MAX</button>
+                <button class="btn btn-warning btn-sm" onclick="collectAllLightning()">⚡ 全部收取闪电</button>
+                <button class="btn btn-success btn-sm" onclick="toggleAllAuto(true)">🤖 全部自动开</button>
+                <button class="btn btn-danger btn-sm" onclick="toggleAllAuto(false)">🛑 全部自动关</button>
+                <button class="btn btn-sm" onclick="refreshAllStatus()">🔄 刷新全部</button>
+                <div style="margin-left:12px;display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:10px;color:#aaa;">次日重置</span>
+                    <select id="nextDayHourSelect" onchange="setNextDayHour(this.value)" style="background:#111; color:#fff; border:1px solid var(--neon-blue); padding:3px 6px; font-size:10px; border-radius:4px;">
+                        <option value="6">06:00</option><option value="7" selected>07:00</option><option value="8">08:00</option><option value="9">09:00</option>
+                    </select>
+                </div>
+                <label style="font-size:10px;color:#aaa;display:flex;align-items:center;gap:4px;margin-left:8px;">
+                    <input type="checkbox" id="autoReconnectToggle" checked onchange="toggleAutoReconnect(this.checked)"> 掉线重连
+                </label>
+            </div>
+        </div>
+        <div class="progress-container" id="progressContainer"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-text" id="progressText"></div>
+        <div class="pledge-panel">
+            <h3>💎 全局质押管理</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-sm btn-danger" onclick="unPledgeAll()">🔓 一键解质押</button>
+                <button class="btn btn-sm btn-success" onclick="claimAllPledge(5)">💰 提领(5天)</button>
+                <button class="btn btn-sm btn-success" onclick="claimAllPledge(10)">💰 提领(10天)</button>
+                <button class="btn btn-sm btn-warning" onclick="pledgeAllAvailable()">🔒 一键质押</button>
+            </div>
+        </div>
+        <div class="cards-grid" id="cardsGrid"><div style="color:#666;text-align:center;padding:40px;grid-column:1/-1;">暂无账号</div></div>
+    </main>
+</div>
+<script>
+(function() {
+    const API_BASE = 'https://api.mallex.io';
+    const FIXED_SIGN = 'b87766420f91cbfcfde1c0d232de5b99';
+    const V = '1.2.0', HV = '55';
+    const MAX_DURATION = 10800, LIGHTNING_COOLDOWN = 86400;
+    const MAX_RETRIES = 3;
+    let accounts = [], isOperating = false, statusTimer, uiTimer;
+    let nextDayHour = 7, autoReconnect = true;
+
+    function saveAccounts() {
+        const data = accounts.map(a => ({
+            mobile:a.mobile, password:a.password, token:a.token, userInfo:a.userInfo, maxInfo:a.maxInfo,
+            lightningFreezeTime:a.lightningFreezeTime, autoMax:a.autoMax!==false, autoLightning:a.autoLightning!==false,
+            noRewardFlag:a.noRewardFlag||false, maxStatusType:a.maxStatusType||null, noRewardUntil:a.noRewardUntil||null,
+            pledgeClaimed:a.pledgeClaimed||0, pledgeUnlocked:a.pledgeUnlocked||0, lastAssetMap:a.lastAssetMap||null
+        }));
+        localStorage.setItem('mallex_apk_final', JSON.stringify(data));
+    }
+    function loadAccounts() {
+        try {
+            const raw = localStorage.getItem('mallex_apk_final');
+            if(raw) accounts = JSON.parse(raw).map(a => ({...a, cardLogs:[], pendingMaxAfterLightning:false, token:a.token||null, userInfo:a.userInfo||null, maxInfo:a.maxInfo||null, lightningFreezeTime:a.lightningFreezeTime||null, pledgeClaimed:a.pledgeClaimed||0, pledgeUnlocked:a.pledgeUnlocked||0, lastAssetMap:a.lastAssetMap||null }));
+        } catch(e) { accounts = []; }
+    }
+
+    function addGlobalLog(msg, type='info') {
+        const list = document.getElementById('globalLogList'); if(!list) return;
+        const div = document.createElement('div'); div.className = `log-item ${type}`;
+        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        list.insertBefore(div, list.firstChild); if(list.children.length>300) list.removeChild(list.lastChild);
+    }
+    function addCardLog(i, msg, type='info') {
+        if(i<0||i>=accounts.length) return;
+        if(!accounts[i].cardLogs) accounts[i].cardLogs = [];
+        accounts[i].cardLogs.unshift({ time: new Date().toLocaleTimeString(), msg, type });
+        if(accounts[i].cardLogs.length>50) accounts[i].cardLogs.pop();
+        updateCardLogUI(i);
+    }
+    function updateCardLogUI(i) {
+        const el = document.getElementById(`cardLog_${i}`); if(!el) return;
+        el.innerHTML = (accounts[i]?.cardLogs||[]).slice(0,15).map(l => `<div class="log-item ${l.type}">[${l.time}] ${l.msg}</div>`).join('');
+    }
+
+    function showProgress(show, current=0, total=1, text='') {
+        const container = document.getElementById('progressContainer');
+        const bar = document.getElementById('progressBar');
+        const textEl = document.getElementById('progressText');
+        if(show && total > 0) {
+            container.style.display = 'block'; textEl.style.display = 'block';
+            const pct = Math.min(100, Math.round((current/total)*100));
+            bar.style.width = pct+'%';
+            textEl.textContent = text ? `${text} (${current}/${total})` : `${current}/${total}`;
+        } else {
+            container.style.display = 'none'; textEl.style.display = 'none';
+            bar.style.width = '0%';
+        }
+    }
+
+    function getSignHeaders(token=null) {
+        const now = Date.now(), rid = now+''+Math.floor(Math.random()*1e6);
+        const dt = new Date(now), st = dt.getFullYear()+(dt.getMonth()+1).toString().padStart(2,'0')+dt.getDate().toString().padStart(2,'0')+dt.getHours().toString().padStart(2,'0')+dt.getMinutes().toString().padStart(2,'0')+dt.getSeconds().toString().padStart(2,'0');
+        const h = { 'language':'zh-CN','requestid':rid,'version':V,'os':'Android','hotfixversion':HV,'sign-timestamp':now.toString(),'sign-time':st,'sign-version':'2','sign':FIXED_SIGN,'Content-Type':'application/json','User-Agent':'okhttp/4.9.2','Accept-Encoding':'gzip','Connection':'Keep-Alive' };
+        if(token) h['token'] = token; return h;
+    }
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function randomDelay(min,max) { return delay(Math.floor(Math.random()*(max-min+1))+min); }
+
+    function speakMessage(msg) {
+        if(!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(msg);
+        utterance.lang = 'zh-CN'; utterance.rate = 1;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // API 封装
+    async function apiLogin(m,p) { const r=await fetch(API_BASE+'/gateway/session/login-by-password',{method:'POST',headers:getSignHeaders(),body:JSON.stringify({mobile:m,password:p,countryCode:'86',ticket:'',randStr:''})}); return await r.json(); }
+    async function apiUserInfo(tk) { const r=await fetch(API_BASE+'/gateway/user/info',{method:'GET',headers:getSignHeaders(tk)}); return await r.json(); }
+    async function apiCountdownInfo(tk) { const r=await fetch(API_BASE+'/gateway/countdown/info',{method:'GET',headers:getSignHeaders(tk)}); return await r.json(); }
+    async function apiCountdownStart(tk) { const r=await fetch(API_BASE+'/gateway/countdown/start',{method:'POST',headers:getSignHeaders(tk),body:JSON.stringify({ticket:'',randStr:''})}); return await r.json(); }
+    async function apiCountdownCollect(tk) { const r=await fetch(API_BASE+'/gateway/countdown/collect',{method:'POST',headers:getSignHeaders(tk),body:JSON.stringify({ticket:'',randStr:''})}); return await r.json(); }
+    async function apiExcFreeze(tk) { const r=await fetch(API_BASE+'/gateway/exc/freeze',{method:'POST',headers:getSignHeaders(tk),body:JSON.stringify({})}); return await r.json(); }
+    async function apiExcGet(tk) { const r=await fetch(API_BASE+'/gateway/exc/get',{method:'GET',headers:getSignHeaders(tk)}); return await r.json(); }
+    async function apiPledgeOrderList(tk) { const r=await fetch(API_BASE+'/gateway/pledge/queryPledgeOrderList',{method:'GET',headers:getSignHeaders(tk)}); return await r.json(); }
+    async function apiQueryPledgeOrdersForClaim(tk) { const r=await fetch(API_BASE+'/gateway/pledge/queryPledgeOrdersForClaim',{method:'POST',headers:getSignHeaders(tk),body:JSON.stringify({queryType:'pledge',pageNumber:0,pageSize:50})}); return await r.json(); }
+    async function apiUnPledge(tk, oid, amt) { const r=await fetch(API_BASE+'/gateway/pledge/unPledgePledgeOrder',{method:'POST',headers:getSignHeaders(tk),body:JSON.stringify({orderId:oid, unlockPrincipal:amt})}); return await r.json(); }
+    async function apiClaimPledge(tk, oid, amt, days) { const r=await fetch(API_BASE+'/gateway/pledge/claimPledgeOrder',{method:'POST',headers:getSignHeaders(tk),body:JSON.stringify({orderId:oid, claimAmount:amt, claimType:'pledge', claimFeeDays:days})}); return await r.json(); }
+    async function apiPledgeInfo(tk) { const r=await fetch(API_BASE+'/gateway/pledge/getMyMexPledgeInfo',{method:'GET',headers:getSignHeaders(tk)}); return await r.json(); }
+    async function apiCreatePledge(tk, principal, days=180) { const r=await fetch(API_BASE+'/gateway/pledge/createPledgeOrder',{method:'POST',headers:getSignHeaders(tk),body:JSON.stringify({pledgeDays:days,principal:principal})}); return await r.json(); }
+
+    function getNextDayTime(hour) { const now = new Date(); const next = new Date(now); next.setDate(now.getDate()+1); next.setHours(hour,0,0,0); return next.getTime(); }
+    function formatHMS(s) { const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`; }
+
+    // 登录含重试
+    async function loginAccount(i) {
+        const a=accounts[i]; if(!a) return false;
+        for(let attempt=1; attempt<=MAX_RETRIES; attempt++) {
+            try {
+                const d=await apiLogin(a.mobile,a.password);
+                if(d.code==='OK'&&d.data?.token) {
+                    a.token=d.data.token; a.userInfo=d.data.userInfo||null; a.noRewardFlag=false; a.maxStatusType=null; a.noRewardUntil=null;
+                    addCardLog(i,'登录成功','success'); saveAccounts(); return true;
+                } else { a.token=null; addCardLog(i,`登录失败:${d.msg||''}`,'error'); }
+            } catch(e) { addCardLog(i,'登录异常','error'); }
+            if(attempt < MAX_RETRIES) await delay(2000*attempt);
+        }
+        return false;
+    }
+
+    async function fetchUserInfo(i) { 
+        const a=accounts[i]; if(!a?.token) return; 
+        try { const d=await apiUserInfo(a.token); if(d.code==='OK'&&d.data) { a.userInfo=d.data; saveAccounts(); } else if(d.code==='UNAUTHORIZED') { a.token=null; a.userInfo=null; saveAccounts(); } } catch(e){}
+    }
+    async function fetchMaxStatus(i) { 
+        const a=accounts[i]; if(!a?.token) return; 
+        try { const d=await apiCountdownInfo(a.token); if(d.code==='OK'&&d.data) { a.maxInfo=d.data; if(!['collected','noreward'].includes(a.maxStatusType)) a.maxStatusType=(d.data.status==='RUNNING'||d.data.status==='WAIT_COLLECT')?'running':'idle'; saveAccounts(); } } catch(e){}
+    }
+    async function syncLightning(i) { 
+        const a=accounts[i]; if(!a?.token) return; 
+        try { const d=await apiExcGet(a.token); if(d.code==='OK'&&d.data?.freezeTime) { a.lightningFreezeTime=d.data.freezeTime; saveAccounts(); } } catch(e){}
+    }
+
+    // MAX带智能重试
+    async function startMAX(i) {
+        const a=accounts[i]; if(!a?.token) return false;
+        if(a.noRewardUntil && Date.now()<a.noRewardUntil) { addCardLog(i,`需等到${new Date(a.noRewardUntil).toLocaleString()}`,'warning'); return false; }
+        for(let attempt=1; attempt<=MAX_RETRIES; attempt++) {
+            try {
+                const d=await apiCountdownStart(a.token); const msg=(d.msg||'').toString();
+                if(d.code==='OK') {
+                    a.maxStatusType='running'; a.noRewardFlag=false; a.noRewardUntil=null;
+                    addCardLog(i,'MAX已开始','success'); await fetchMaxStatus(i); saveAccounts(); return true;
+                } else if(msg.includes('已领取')||msg.includes('领取完成')) {
+                    a.maxStatusType='collected'; a.noRewardUntil=getNextDayTime(nextDayHour); saveAccounts(); return false;
+                } else if(msg.includes('无奖励')||msg.includes('无可领取')) {
+                    a.maxStatusType='noreward'; a.noRewardUntil=getNextDayTime(nextDayHour); saveAccounts(); return false;
+                } else {
+                    if(attempt < MAX_RETRIES) { addCardLog(i,`开始失败，${2*attempt}秒后重试`,'warning'); await delay(2000*attempt); }
+                }
+            } catch(e) { if(attempt < MAX_RETRIES) await delay(2000*attempt); }
+        }
+        return false;
+    }
+    async function collectMAX(i) {
+        const a=accounts[i]; if(!a?.token) return false;
+        for(let attempt=1; attempt<=MAX_RETRIES; attempt++) {
+            try {
+                const d=await apiCountdownCollect(a.token);
+                if(d.code==='OK') { addCardLog(i,'MAX领取成功','success'); a.maxStatusType='idle'; await fetchMaxStatus(i); await fetchUserInfo(i); if(a.autoMax&&!a.noRewardFlag) await startMAX(i); return true; }
+                else { if(attempt < MAX_RETRIES) { addCardLog(i,`领取失败，重试${attempt+1}`,'warning'); await delay(2000*attempt); } }
+            } catch(e) { if(attempt < MAX_RETRIES) await delay(2000*attempt); }
+        }
+        return false;
+    }
+    // 闪电收取重试
+    async function collectLightningRaw(i) {
+        const a=accounts[i]; if(!a?.token) return false;
+        try {
+            const d=await apiExcFreeze(a.token);
+            if(d.code==='OK') { await syncLightning(i); addCardLog(i,'闪电收取成功','success'); return true; }
+            else if((d.msg||'').includes('未满24小时')) { await syncLightning(i); addCardLog(i,'闪电冷却中','warning'); return false; }
+            else { addCardLog(i,`闪电失败:${d.msg||''}`,'error'); return false; }
+        } catch(e) { addCardLog(i,'闪电异常','error'); return false; }
+    }
+    async function collectLightning(i) {
+        for(let attempt=1; attempt<=MAX_RETRIES; attempt++) {
+            const ok = await collectLightningRaw(i);
+            if(ok) return true;
+            if(attempt < MAX_RETRIES) { const wait = Math.floor(Math.random()*3000)+2000; addCardLog(i,`闪电重试${attempt+1}/${MAX_RETRIES}，等待${(wait/1000).toFixed(1)}秒`,'warning'); await delay(wait); }
+        }
+        return false;
+    }
+
+    // 质押数据
+    async function fetchAllPledgeData(i) {
+        const a=accounts[i]; if(!a?.token) return;
+        try {
+            const d1=await apiPledgeOrderList(a.token), d2=await apiQueryPledgeOrdersForClaim(a.token), d3=await apiPledgeInfo(a.token);
+            let ordersAll=[], ordersClaim=[];
+            if(d1.code==='OK'&&Array.isArray(d1.data)) ordersAll=d1.data.filter(o=>o.status===2);
+            if(d2.code==='OK'&&d2.data?.content) ordersClaim=d2.data.content.filter(o=>o.status===2);
+            const unlockable=ordersAll.reduce((s,o)=>s+(o.totalInterest||0),0);
+            const orderCount=ordersAll.length;
+            const totalPrincipal=ordersAll.reduce((s,o)=>s+(o.principal||0),0);
+            const claimable=ordersClaim.reduce((s,o)=>s+(o.totalInterest||0),0);
+            let maxNextClaim=0;
+            ordersAll.forEach(o=>{if(o.nextClaimTimestamp>maxNextClaim)maxNextClaim=o.nextClaimTimestamp;});
+            ordersClaim.forEach(o=>{if(o.nextClaimTimestamp>maxNextClaim)maxNextClaim=o.nextClaimTimestamp;});
+            const expireDisplay=formatHMS(Math.floor(maxNextClaim/1000));
+            const availablePledge=(d3.code==='OK'&&d3.data)?(d3.data.mexAvailableBalance||0):0;
+            a._pledgeData={claimable,unlockable,orderCount,totalPrincipal,expireDisplay,orders:ordersAll,availablePledge};
+            saveAccounts();
+        } catch(e) { addCardLog(i,'质押数据查询异常','error'); }
+    }
+
+    async function unPledgeSingle(i) {
+        const a=accounts[i]; if(!a?.token||!a._pledgeData?.orders?.length) { addCardLog(i,'无质押订单','warning'); return; }
+        for(const o of a._pledgeData.orders) { const amt=o.totalInterest||0; if(amt<=0) continue; addCardLog(i,`解押 ID:${o.id} 收益:${amt}`,'info'); const r=await apiUnPledge(a.token,o.id,amt); if(r.code==='OK') { a.pledgeUnlocked=(a.pledgeUnlocked||0)+amt; addCardLog(i,`解押成功+${amt}`,'success'); } else addCardLog(i,`解押失败:${r.msg}`,'error'); await randomDelay(1200,2000); }
+        saveAccounts(); await delay(3000); await refreshAssetsAndCompare(i); updateSingleCard(i);
+    }
+    async function claimSingle(i,days=5) {
+        const a=accounts[i]; if(!a?.token||!a._pledgeData?.orders?.length) { addCardLog(i,'无质押订单','warning'); return; }
+        for(const o of a._pledgeData.orders) { const amt=o.totalInterest||0; if(amt<=0) continue; addCardLog(i,`提领 ID:${o.id} 收益:${amt} (${days}天)`,'info'); const r=await apiClaimPledge(a.token,o.id,amt,days); if(r.code==='OK') { a.pledgeClaimed=(a.pledgeClaimed||0)+amt; addCardLog(i,`提领成功+${amt}`,'success'); } else addCardLog(i,`提领失败:${r.msg}`,'error'); await randomDelay(1200,2000); }
+        saveAccounts(); await delay(3000); await refreshAssetsAndCompare(i); updateSingleCard(i);
+    }
+    async function pledgeSingle(i, amount) {
+        const a=accounts[i]; if(!a?.token) return;
+        if(!amount||amount<=1) { addCardLog(i,'质押数量必须大于1','error'); return; }
+        addCardLog(i,`质押 ${amount} MEX ...`,'info'); const r=await apiCreatePledge(a.token,amount,180);
+        if(r.code==='OK') { addCardLog(i,`质押成功: ${amount}`,'success'); } else { addCardLog(i,`质押失败: ${r.msg||''}`,'error'); }
+        await delay(2000); await fetchAllPledgeData(i); await refreshAssetsAndCompare(i); updateSingleCard(i);
+    }
+    async function refreshAssetsAndCompare(i) {
+        const a=accounts[i]; if(!a?.token) return;
+        const prev=a.lastAssetMap||{}; await fetchUserInfo(i);
+        const curr=a.userInfo?.assetMap||{}; const changes={};
+        for(const [asset,val] of Object.entries(curr)) { const old=prev[asset]||0; if(Math.abs(val-old)>0.000001) changes[asset]={old,new:val,diff:val-old}; }
+        a.lastAssetMap={...curr}; a._assetChanges=changes; saveAccounts();
+    }
+
+    // 全局批量操作（带进度条）
+    async function unPledgeAll() {
+        if(isOperating) return; isOperating=true;
+        const list = accounts.map((a,i)=>a.token?i:-1).filter(i=>i>=0);
+        showProgress(true,0,list.length,'解质押');
+        for(let idx=0; idx<list.length; idx++) {
+            const i=list[idx]; await fetchAllPledgeData(i); await unPledgeSingle(i);
+            showProgress(true,idx+1,list.length,'解质押'); await randomDelay(1500,2500);
+        }
+        showProgress(false); isOperating=false; addGlobalLog('一键解质押完成','success');
+    }
+    async function claimAllPledge(days) {
+        if(isOperating) return; isOperating=true;
+        const list = accounts.map((a,i)=>a.token?i:-1).filter(i=>i>=0);
+        showProgress(true,0,list.length,`提领${days}天`);
+        for(let idx=0; idx<list.length; idx++) {
+            const i=list[idx]; await fetchAllPledgeData(i); await claimSingle(i,days);
+            showProgress(true,idx+1,list.length,`提领${days}天`); await randomDelay(1500,2500);
+        }
+        showProgress(false); isOperating=false; addGlobalLog(`提领${days}天完成`,'success');
+    }
+    async function pledgeAllAvailable() {
+        if(isOperating) return; isOperating=true;
+        const list = accounts.map((a,i)=>a.token?i:-1).filter(i=>i>=0);
+        showProgress(true,0,list.length,'一键质押');
+        for(let idx=0; idx<list.length; idx++) {
+            const i=list[idx]; await fetchAllPledgeData(i);
+            const avail = accounts[i]._pledgeData?.availablePledge||0;
+            if(avail>1) await pledgeSingle(i, avail);
+            showProgress(true,idx+1,list.length,'一键质押'); await randomDelay(1500,2500);
+        }
+        showProgress(false); isOperating=false; addGlobalLog('一键质押完成','success');
+    }
+    async function startAllMAX() {
+        if(isOperating) return; isOperating=true;
+        const list = accounts.map((a,i)=>a.token?i:-1).filter(i=>i>=0);
+        showProgress(true,0,list.length,'开始MAX');
+        for(let idx=0; idx<list.length; idx++) {
+            await startMAX(list[idx]); updateSingleCard(list[idx]);
+            showProgress(true,idx+1,list.length,'开始MAX'); await randomDelay(1000,2000);
+        }
+        showProgress(false); isOperating=false;
+    }
+    async function collectAllLightning() {
+        if(isOperating) return; isOperating=true;
+        const list = accounts.map((a,i)=>a.token&&getLightningState(a).ready?i:-1).filter(i=>i>=0);
+        showProgress(true,0,list.length,'收取闪电');
+        let ok=0,fail=0;
+        for(let idx=0; idx<list.length; idx++) {
+            const i=list[idx]; const res = await collectLightning(i); updateSingleCard(i);
+            if(res) ok++; else fail++;
+            showProgress(true,idx+1,list.length,'收取闪电'); await randomDelay(1200,2500);
+        }
+        showProgress(false); isOperating=false;
+        if(fail>0) speakMessage(`${ok}个账号领取闪电成功，${fail}个失败，请注意领取`);
+        else if(ok>0) speakMessage(`${ok}个账号领取闪电成功`);
+    }
+    function toggleAllAuto(enable) {
+        accounts.forEach((a,i)=>{ a.autoMax=enable; a.autoLightning=enable; if(a.token) addCardLog(i,enable?'自动已开启':'自动已关闭','info'); });
+        saveAccounts(); renderAllCards();
+    }
+    async function refreshAllStatus() {
+        if(isOperating) return; isOperating=true;
+        const list = accounts.map((a,i)=>a.token?i:-1).filter(i=>i>=0);
+        showProgress(true,0,list.length,'刷新全部状态');
+        for(let idx=0; idx<list.length; idx++) {
+            const i=list[idx];
+            await fetchMaxStatus(i); await syncLightning(i); await fetchAllPledgeData(i);
+            if(autoReconnect && !accounts[i].token) { addCardLog(i,'尝试重新登录','info'); await loginAccount(i); }
+            showProgress(true,idx+1,list.length,'刷新全部状态'); await randomDelay(400,800);
+        }
+        showProgress(false); saveAccounts(); renderAllCards(); isOperating=false;
+        addGlobalLog('全部状态刷新完成','success');
+    }
+    function toggleAutoReconnect(val) { autoReconnect = val; localStorage.setItem('autoReconnect',val); }
+
+    // UI
+    function renderAllCards() {
+        document.getElementById('accountCount').textContent = accounts.length;
+        const grid = document.getElementById('cardsGrid');
+        if(!accounts.length) { grid.innerHTML='<div style="color:#666;text-align:center;padding:40px;grid-column:1/-1;">暂无账号</div>'; return; }
+        grid.innerHTML = accounts.map((_,i)=>renderCard(i)).join('');
+        accounts.forEach((_,i)=> updateCardLogUI(i));
+    }
+    function updateSingleCard(i) { const old=document.getElementById(`card_${i}`); if(!old) return; const html=renderCard(i); const temp=document.createElement('div'); temp.innerHTML=html; old.replaceWith(temp.firstElementChild); updateCardLogUI(i); }
+    function getMAXState(a) {
+        if(a.maxStatusType==='collected') return {status:'collected',display:'领取完成',canCollect:false,reward:0,countdownSec:0};
+        if(a.maxStatusType==='noreward') return {status:'noreward',display:'无奖励',canCollect:false,reward:0,countdownSec:0};
+        if(!a?.maxInfo) return {status:'idle',display:'未开始',canCollect:false,reward:0,countdownSec:0};
+        const info=a.maxInfo, reward=info.rewardTotal||0;
+        if(info.status==='WAIT_COLLECT') return {status:'ready',display:'可领取!',canCollect:true,reward,countdownSec:0};
+        if(info.status==='RUNNING'&&info.startTime&&info.durationSecond) { const start=new Date(info.startTime).getTime(); const end=start+info.durationSecond*1000; const remain=Math.max(0,Math.floor((end-Date.now())/1000)); return {status:'running',display:remain<=0?'可领取!':formatHMS(remain),canCollect:remain<=0,reward,countdownSec:remain}; }
+        return {status:'idle',display:'未开始',canCollect:false,reward:0,countdownSec:0};
+    }
+    function getLightningState(a) {
+        if(!a?.lightningFreezeTime) return {ready:true,display:'可收取',countdownSec:0};
+        const t=new Date(a.lightningFreezeTime).getTime(); if(isNaN(t)) return {ready:true,display:'可收取',countdownSec:0};
+        const remain=Math.max(0,Math.floor((t+LIGHTNING_COOLDOWN*1000-Date.now())/1000));
+        return {ready:remain<=0,display:remain<=0?'可收取!':formatHMS(remain),countdownSec:remain};
+    }
+    function renderCard(i) {
+        const a=accounts[i], logged=!!a.token, user=a.userInfo||{};
+        const max=getMAXState(a), light=getLightningState(a);
+        let assetsHtml = '';
+        if(user.assetMap) {
+            const changes = a._assetChanges || {};
+            assetsHtml = Object.entries(user.assetMap).map(([asset,amt])=>{
+                const ch = changes[asset]; let arrow = ''; if(ch) arrow = ch.diff>0?'<span class="arrow-up">▲</span>':'<span class="arrow-down">▼</span>';
+                const price = (user.currentPriceByAssetType?.[asset]||user.priceByAssetTypeToday?.[asset]||0);
+                return `<span class="asset-tag">${asset}: <span>${Number(amt).toFixed(4)}</span> ${price>0?'≈¥'+(amt*price).toFixed(2):''} ${arrow}</span>`;
+            }).join('');
+        }
+        const vip=user.vipLevel||0, nick=user.nickname||a.mobile;
+        const pd = a._pledgeData || {};
+        const claimable = pd.claimable?.toFixed(4)||'0.0000';
+        const claimed = (a.pledgeClaimed||0).toFixed(4);
+        const unlockable = pd.unlockable?.toFixed(4)||'0.0000';
+        const unlocked = (a.pledgeUnlocked||0).toFixed(4);
+        const orderCount = pd.orderCount||0;
+        const totalPrincipal = (pd.totalPrincipal||0).toFixed(4);
+        const expireDisplay = pd.expireDisplay || '--:--:--';
+        const availablePledge = pd.availablePledge ? pd.availablePledge.toFixed(8) : '0.00000000';
+        let maxCls='status-idle', maxTxt='未开始';
+        if(max.status==='collected'){ maxCls='status-collected'; maxTxt='领取完成'; }
+        else if(max.status==='noreward'){ maxCls='status-noreward'; maxTxt='无奖励'; }
+        else if(max.status==='running'){ maxCls='status-running'; maxTxt='释放中'; }
+        else if(max.status==='ready'){ maxCls='status-ready'; maxTxt='可领取'; }
+        const lightStatusCls = light.ready?'status-ready':'status-running';
+        return `<div class="account-card" id="card_${i}">
+            <div class="card-header"><div><span class="card-mobile">📱 ${a.mobile}</span> <span style="font-size:11px;color:#aaa;margin-left:4px;">${nick}</span></div><div style="display:flex;gap:4px;">${vip>0?`<span class="badge badge-vip">VIP${vip}</span>`:''}<span class="badge ${logged?'badge-online':''}">${logged?'在线':'离线'}</span><button class="btn btn-xs btn-danger" onclick="removeAccount(${i})">✕</button></div></div>
+            <div class="card-assets">${assetsHtml||'<span style="color:#666;">无资产数据</span>'}</div>
+            <div class="section-row"><span class="section-label">🔷 MAX</span><span class="status-text ${maxCls}">${maxTxt}</span><span class="countdown-display">${max.display}</span>${max.reward>0?`<span style="font-size:10px;color:var(--neon-gold);">💰${max.reward.toFixed(6)}</span>`:''}<button class="btn btn-xs btn-success" onclick="handleStartMAX(${i})" ${!logged||max.status==='running'||max.status==='noreward'||max.status==='collected'?'disabled':''}>开始</button><button class="btn btn-xs btn-gold" onclick="handleCollectMAX(${i})" ${!max.canCollect?'disabled':''}>领取</button><label class="auto-toggle ${a.autoMax?'active':''}"><input type="checkbox" ${a.autoMax?'checked':''} onchange="toggleAutoMax(${i},this.checked)">自动</label></div>
+            <div class="section-row"><span class="section-label">⚡ 闪电</span><span class="status-text ${lightStatusCls}">${light.ready?'可收取':'冷却中'}</span><span class="countdown-display">${light.display}</span><button class="btn btn-xs btn-warning" onclick="handleCollectLightning(${i})" ${!logged||!light.ready?'disabled':''}>收取</button><label class="auto-toggle ${a.autoLightning?'active':''}"><input type="checkbox" ${a.autoLightning?'checked':''} onchange="toggleAutoLightning(${i},this.checked)">自动</label></div>
+            <div class="pledge-summary">
+                <span>📈 可提领: <b>${claimable}</b></span> <span>已提领: <b>${claimed}</b></span>
+                <span>可解押: <b>${unlockable}</b></span> <span>已解押: <b>${unlocked}</b></span>
+                <span class="pledge-extra">| 笔数: <b>${orderCount}</b>  总额: <b>${totalPrincipal}</b>  到期: <b>${expireDisplay}</b>  可质押: <b>${availablePledge}</b></span>
+            </div>
+            <div style="display:flex;gap:4px;margin-top:4px; flex-wrap:wrap; align-items:center;">
+                <button class="btn btn-xs btn-danger" onclick="unPledgeSingle(${i})">🔓 解押收益</button>
+                <button class="btn btn-xs btn-success" onclick="claimSingle(${i},5)">💰 提领5天</button>
+                <button class="btn btn-xs btn-success" onclick="claimSingle(${i},10)">💰 提领10天</button>
+                <input type="number" id="pledgeAmount_${i}" placeholder="数量" step="0.0001" value="${availablePledge > 1 ? availablePledge : ''}" style="width:80px;padding:3px;background:#111;border:1px solid var(--neon-blue);color:#fff;border-radius:4px;font-size:10px;">
+                <button class="btn btn-xs btn-warning" onclick="handlePledgeSingle(${i})">🔒 质押</button>
+            </div>
+            <div style="margin-top:4px;"><button class="btn btn-xs" onclick="handleLogin(${i})" ${logged?'disabled':''}>登录</button><button class="btn btn-xs" onclick="handleRefresh(${i})" ${!logged?'disabled':''}>刷新</button></div>
+            <div class="card-log" id="cardLog_${i}"></div>
+        </div>`;
+    }
+
+    // 事件绑定
+    window.handleLogin = async (i) => { if(isOperating)return; isOperating=true; await loginAccount(i); await fetchAllPledgeData(i); isOperating=false; updateSingleCard(i); };
+    window.handleStartMAX = async (i) => { if(isOperating)return; isOperating=true; await startMAX(i); isOperating=false; updateSingleCard(i); };
+    window.handleCollectMAX = async (i) => { if(isOperating)return; isOperating=true; await collectMAX(i); isOperating=false; updateSingleCard(i); };
+    window.handleCollectLightning = async (i) => { if(isOperating)return; isOperating=true; await collectLightning(i); isOperating=false; updateSingleCard(i); };
+    window.handleRefresh = async (i) => { if(!accounts[i]?.token) return; await fetchMaxStatus(i); await syncLightning(i); await fetchAllPledgeData(i); saveAccounts(); updateSingleCard(i); };
+    window.toggleAutoMax = (i,val) => { accounts[i].autoMax = val; saveAccounts(); updateSingleCard(i); };
+    window.toggleAutoLightning = (i,val) => { accounts[i].autoLightning = val; saveAccounts(); updateSingleCard(i); };
+    window.unPledgeSingle = unPledgeSingle;
+    window.claimSingle = claimSingle;
+    window.handlePledgeSingle = async (i) => {
+        const input = document.getElementById(`pledgeAmount_${i}`);
+        const amount = parseFloat(input?.value);
+        if(isNaN(amount)||amount<=0) { addCardLog(i,'请输入有效数量','error'); return; }
+        await pledgeSingle(i, amount);
+    };
+    window.removeAccount = (i) => { if(!confirm(`删除账号 ${accounts[i].mobile}？`)) return; accounts.splice(i,1); saveAccounts(); renderAllCards(); };
+    window.addAccountManually = () => {
+        const m=document.getElementById('addMobile').value.trim(), p=document.getElementById('addPassword').value.trim();
+        if(!m||!p) { alert('请输入手机号和密码'); return; }
+        if(accounts.some(a=>a.mobile===m)) { alert('账号已存在'); return; }
+        accounts.push({mobile:m,password:p,token:null,userInfo:null,maxInfo:null,lightningFreezeTime:null,autoMax:true,autoLightning:true,cardLogs:[],pledgeClaimed:0,pledgeUnlocked:0,lastAssetMap:null});
+        document.getElementById('addMobile').value=''; document.getElementById('addPassword').value='';
+        saveAccounts(); renderAllCards(); addGlobalLog(`已添加账号 ${m}`,'success');
+    };
+    window.importFromPaste = () => {
+        const text = document.getElementById('batchImportText').value.trim();
+        if(!text) { alert('请粘贴账号数据'); return; }
+        const lines = text.split(/[\r\n]+/); let added=0;
+        for(let line of lines) {
+            line=line.trim(); if(!line) continue;
+            let sep='-----'; if(line.includes('-----')) sep='-----'; else if(line.includes('----')) sep='----'; else if(line.includes('---')) sep='---'; else if(line.includes(' ')) sep=' '; else continue;
+            const [m,p] = line.split(sep).map(s=>s.trim()); if(!m||!p) continue;
+            if(accounts.some(a=>a.mobile===m)) continue;
+            accounts.push({mobile:m,password:p,token:null,userInfo:null,maxInfo:null,lightningFreezeTime:null,autoMax:true,autoLightning:true,cardLogs:[],pledgeClaimed:0,pledgeUnlocked:0,lastAssetMap:null});
+            added++;
+        }
+        document.getElementById('batchImportText').value = '';
+        saveAccounts(); renderAllCards(); addGlobalLog(`粘贴导入 ${added} 个账号`,'success');
+        if(added && confirm('立即登录全部账号？')) window.loginAllAccounts();
+    };
+    // 文件导入
+    function setupImport() {
+        const fi = document.getElementById('fileInput');
+        fi.addEventListener('change', async () => {
+            if(fi.files[0]) {
+                const text = await fi.files[0].text();
+                document.getElementById('batchImportText').value = text;
+                window.importFromPaste();
+                fi.value = '';
+            }
+        });
+    }
+    window.loginAllAccounts = async () => {
+        if(isOperating) return; isOperating=true;
+        const list = accounts.map((a,i)=>!a.token?i:-1).filter(i=>i>=0);
+        showProgress(true,0,list.length,'批量登录');
+        let ok=0;
+        for(let idx=0; idx<list.length; idx++) {
+            const i=list[idx];
+            if(await loginAccount(i)) ok++;
+            updateSingleCard(i);
+            showProgress(true,idx+1,list.length,'批量登录');
+            await randomDelay(2000,4000);
+        }
+        showProgress(false); isOperating=false;
+        addGlobalLog(`批量登录完成: ${ok}/${list.length} 成功`,'success');
+    };
+
+    // 自动循环与掉线重连
+    async function autoCheckLoop() {
+        if(isOperating) return;
+        let lightningOk=0, lightningFail=0;
+        for(let i=0;i<accounts.length;i++) {
+            const a=accounts[i]; if(!a?.token) continue;
+            if(a.noRewardUntil&&Date.now()>a.noRewardUntil){ a.noRewardFlag=false; a.noRewardUntil=null; a.maxStatusType='idle'; saveAccounts(); }
+            const m=getMAXState(a);
+            if(a.autoMax) {
+                if(m.canCollect) { await collectMAX(i); updateSingleCard(i); await randomDelay(1500,3000); continue; }
+                else if(m.status==='idle'&&!a.noRewardFlag&&a.maxStatusType!=='collected') { await startMAX(i); updateSingleCard(i); await randomDelay(1500,3000); continue; }
+            }
+            if(a.autoLightning && getLightningState(a).ready) {
+                const ok = await collectLightning(i);
+                if(ok) lightningOk++; else lightningFail++;
+                updateSingleCard(i); await randomDelay(1500,3000);
+            }
+        }
+        if(lightningFail>0) speakMessage(`${lightningOk}个账号领取闪电成功，${lightningFail}个失败`);
+        else if(lightningOk>0) speakMessage(`${lightningOk}个账号领取闪电成功`);
+
+        if(autoReconnect) {
+            for(let i=0;i<accounts.length;i++) {
+                if(accounts[i].token) continue;
+                if(accounts[i].mobile && accounts[i].password) {
+                    addCardLog(i,'检测到离线，尝试重新登录','warning');
+                    await loginAccount(i);
+                    if(accounts[i].token) { await fetchAllPledgeData(i); updateSingleCard(i); }
+                }
+            }
+        }
+    }
+
+    function startTimers() {
+        stopTimers();
+        statusTimer = setInterval(autoCheckLoop, 300000);
+        uiTimer = setInterval(() => {
+            document.querySelectorAll('[id^="card_"]').forEach(card => {
+                const idx = parseInt(card.id.split('_')[1]);
+                if(isNaN(idx)||!accounts[idx]) return;
+                const maxDisp = card.querySelector('.section-row:nth-child(3) .countdown-display');
+                const lightDisp = card.querySelector('.section-row:nth-child(4) .countdown-display');
+                if(maxDisp) maxDisp.textContent = getMAXState(accounts[idx]).display;
+                if(lightDisp) lightDisp.textContent = getLightningState(accounts[idx]).display;
+            });
+        }, 1000);
+    }
+    function stopTimers() { if(statusTimer)clearInterval(statusTimer); if(uiTimer)clearInterval(uiTimer); statusTimer=uiTimer=null; }
+
+    document.addEventListener('visibilitychange', () => {
+        if(document.visibilityState === 'visible') {
+            if(!statusTimer) startTimers();
+            autoCheckLoop();
+        }
+    });
+
+    function setNextDayHour(val) { nextDayHour = parseInt(val); localStorage.setItem('nextDayHour', val); addGlobalLog(`次日重置时间已设为 ${val}:00`,'info'); }
+    window.setNextDayHour = setNextDayHour;
+
+    function init() {
+        loadAccounts();
+        const savedHour = localStorage.getItem('nextDayHour');
+        if(savedHour) { nextDayHour = parseInt(savedHour); document.getElementById('nextDayHourSelect').value = savedHour; }
+        autoReconnect = localStorage.getItem('autoReconnect') !== 'false';
+        document.getElementById('autoReconnectToggle').checked = autoReconnect;
+        setupImport();
+        renderAllCards();
+        setTimeout(async () => {
+            const offline = accounts.filter(a=>!a.token).length;
+            if(offline && confirm(`${offline}个未登录，立即登录？`)) await window.loginAllAccounts();
+            startTimers();
+            addGlobalLog('系统就绪 ✅ 完整功能已启动','success');
+        }, 500);
+    }
+
+    window.addEventListener('beforeunload', () => { stopTimers(); saveAccounts(); });
+    window.startAllMAX = startAllMAX;
+    window.collectAllLightning = collectAllLightning;
+    window.toggleAllAuto = toggleAllAuto;
+    window.refreshAllStatus = refreshAllStatus;
+    window.unPledgeAll = unPledgeAll;
+    window.claimAllPledge = claimAllPledge;
+    window.pledgeAllAvailable = pledgeAllAvailable;
+    window.toggleAutoReconnect = toggleAutoReconnect;
+    init();
+})();
+</script>
+</body>
 </html>
